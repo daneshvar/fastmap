@@ -6,7 +6,7 @@ import (
 
 type bucket struct {
 	values map[uint]int64
-	lock   sync.RWMutex
+	lock   sync.Mutex
 }
 
 type Map struct {
