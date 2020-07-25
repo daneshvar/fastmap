@@ -1,79 +1,44 @@
 package syncmap
 
 import (
-	"fmt"
 	"sync"
 )
 
-type Nodes map[rune]*leaf
-
-type leaf struct {
-	value int
-	nodes Nodes
+type bucket struct {
+	values map[uint]int64
+	lock   sync.RWMutex
 }
 
 type Map struct {
-	lock  sync.RWMutex
-	nodes Nodes
+	values []bucket
 }
 
 func New() *Map {
-	return &Map{
-		nodes: make(map[rune]*leaf),
+	m := Map{
+		values: make([]bucket, 10),
 	}
+	for i := 0; i < len(m.values); i++ {
+		m.values[i].values = make(map[uint]int64)
+	}
+	return &m
 }
 
-func printNodes(prefix string, nodes Nodes) {
-	for k, v := range nodes {
-		fmt.Printf("%s%s:%d\n", prefix, string(k), v.value)
-		if v.nodes != nil {
-			printNodes(prefix+"\t", v.nodes)
-		}
-	}
+func (m *Map) getBucket(key uint) *bucket {
+	i := key % uint(len(m.values))
+	return &m.values[i]
 }
 
-func (m *Map) PrintNodes() {
-	printNodes("", m.nodes)
+func (m *Map) Store(key uint, value int64) {
+	s := m.getBucket(key)
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.values[key] = value
 }
 
-func (m *Map) Store(key string, value int) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	l := len(key)
-	n := m.nodes
-	for _, c := range key {
-		v, ok := n[c]
-		if !ok {
-			v = &leaf{
-				nodes: make(map[rune]*leaf),
-				value: -1,
-			}
-			n[c] = v
-		}
-
-		l--
-		if l > 0 {
-			n = v.nodes
-		} else {
-			v.value = value
-		}
-	}
-}
-
-func (m *Map) Load(key string) (value int, ok bool) {
-	m.lock.RLock()
-	defer m.lock.RUnlock()
-
-	var v *leaf
-	n := m.nodes
-	for _, c := range key {
-		v, ok = n[c]
-		if !ok {
-			return
-		}
-		n = v.nodes
-	}
-
-	return v.value, true
+func (m *Map) Load(key uint) (value int64, ok bool) {
+	s := m.getBucket(key)
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	value, ok = s.values[key]
+	return
 }

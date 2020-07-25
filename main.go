@@ -9,12 +9,10 @@ import (
 func main() {
 	m := syncmap.New()
 
-	m.Store("ali", 10)
-	m.Store("reza", 11)
-	m.Store("alireza", 10)
+	m.Store(1000, 10)
+	m.Store(1100, 11)
+	m.Store(7, 10)
 
-	v, ok := m.Load("ali")
+	v, ok := m.Load(1000)
 	fmt.Printf("v:%d, ok:%t\n", v, ok)
-
-	m.PrintNodes()
 }
