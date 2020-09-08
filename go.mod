@@ -1,3 +1,3 @@
-module github.com/daneshvar/prj1
+module github.com/daneshvar/fastmap
 
 go 1.14
